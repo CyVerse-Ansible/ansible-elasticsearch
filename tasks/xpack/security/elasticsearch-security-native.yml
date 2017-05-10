@@ -1,18 +1,29 @@
 ---
 
 - set_fact: manage_native_users=false
+  tags:
+    - native-users
 
 - set_fact: manage_native_users=true
   when: es_users is defined and es_users.native is defined
+  tags:
+    - native-users
 
 - set_fact: manage_native_roles=false
+  tags:
+    - native-roles
 
 - set_fact: manage_native_roles=true
   when: es_roles is defined and es_roles.native is defined
+  tags:
+    - native-roles
 
 # If playbook runs too fast, Native commands could fail as the Native Realm is not yet up
-- name: Wait 15 seconds for the Native Relm to come up
+- name: Wait 15 seconds for the Native Realm to come up
   pause: seconds=15
+  tags:
+    - native-users
+    - native-roles
 
 #If the node has just has security installed it maybe either stopped or started 1. if stopped, we need to start to load native realms 2. if started, we need to restart to load
 
@@ -27,14 +38,20 @@
     status_code: 200
   register: user_list_response
   when: manage_native_users
+  tags:
+    - native-users
 
 #Current users not inc. those reserved
 - set_fact: current_users={{ user_list_response.json | filter_reserved }}
   when: manage_native_users
+  tags:
+    - native-users
 
 #Identify non declared users
 - set_fact: users_to_remove={{ current_users | difference ( es_users.native.keys() ) }}
   when: manage_native_users
+  tags:
+    - native-users
 
 #Delete all non required users
 - name: Delete Native Users
@@ -47,9 +64,13 @@
     force_basic_auth: yes
   when: manage_native_users and users_to_remove | length > 0
   with_items: "{{users_to_remove | default([]) }}"
+  tags:
+    - native-users
 
 - set_fact: native_users={{ es_users.native }}
   when: manage_native_users and es_users.native.keys() > 0
+  tags:
+    - native-users
 
 #Overwrite all other users
 - name: Update Native Users
@@ -65,6 +86,8 @@
   when: manage_native_users and native_users.keys() > 0
   no_log: True
   with_dict: "{{native_users | default({}) }}"
+  tags:
+    - native-users
 
 #List current roles not. inc those reserved
 - name: List Native Roles
@@ -78,6 +101,8 @@
     status_code: 200
   register: role_list_response
   when: manage_native_roles
+  tags:
+    - native-roles
 
 - set_fact: current_roles={{ role_list_response.json | filter_reserved }}
   when: manage_native_roles
@@ -85,6 +110,8 @@
 
 - set_fact: roles_to_remove={{ current_roles | difference ( es_roles.native.keys()  ) }}
   when: manage_native_roles
+  tags:
+    - native-roles
 
 
 #Delete all non required roles
@@ -98,10 +125,14 @@
     force_basic_auth: yes
   when: manage_native_roles and roles_to_remove | length > 0
   with_items: "{{roles_to_remove | default([]) }}"
+  tags:
+    - native-roles
 
 
 - set_fact: native_roles={{ es_roles.native }}
   when: manage_native_roles and es_roles.native.keys() > 0
+  tags:
+    - native-roles
 
 #Update other roles
 - name: Update Native Roles
@@ -116,3 +147,6 @@
     force_basic_auth: yes
   when: manage_native_roles and native_roles.keys() > 0
   with_dict: "{{ native_roles | default({})}}"
+  tags:
+    - native-roles
+
