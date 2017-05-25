@@ -7,6 +7,8 @@
 
 - include: elasticsearch-security-file.yml
   when: (es_enable_xpack and '"security" in es_xpack_features') and ((es_users is defined and es_users.file) or (es_roles is defined and es_roles.file is defined))
+  tags:
+      - file-realm
 
 #-----------------------------ROLE MAPPING ----------------------------------------
 
@@ -14,12 +16,16 @@
 - name: Copy role_mapping.yml File for Instance
   template: src=security/role_mapping.yml.j2 dest={{conf_dir}}/x-pack/role_mapping.yml owner={{ es_user }} group={{ es_group }} mode=0644 force=yes
   when: es_role_mapping is defined
+  tags:
+      - role-mapping
 
 #-----------------------------AUTH FILE----------------------------------------
 
 - name: Copy message auth key to elasticsearch
   copy: src={{ es_message_auth_file }} dest={{conf_dir}}/x-pack/system_key owner={{ es_user }} group={{ es_group }} mode=0600 force=yes
   when: es_message_auth_file is defined
+  tags:
+      - message-auth
 
 #------------------------------------------------------------------------------------
 
